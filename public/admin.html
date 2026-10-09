@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard | Energy Solutions</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+
+        .glass-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 1rem;
+        }
+
+        .form-control:focus {
+            border-color: #f59e0b;
+            box-shadow: none;
+            background-color: #020617;
+            color: white;
+        }
+
+        .form-check-input:checked {
+            background-color: #f59e0b;
+            border-color: #f59e0b;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+
+            body {
+                background: rgb(255, 255, 255);
+                color: rgb(0, 0, 0);
+            }
+
+            .glass-card {
+                border: solid;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <nav class="navbar navbar-dark bg-dark border-bottom no-print">
+            <div class="container-fluid">
+                <span class="navbar-brand text-warning font-weight-bold">Admin Portal</span>
+                <div>
+                    <span class="me-3 text-secondary">Hello, <span class="text-white">{{ userName }}</span></span>
+                    <button @click="printReport" class="btn btn-sm btn-outline-info me-2">Print Report</button>
+                    <button @click="logout" class="btn btn-sm btn-danger fw-bold">Logout</button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container my-5">
+
+            <div class="row g-4 mb-5 no-print">
+                <div class="col-lg-8">
+                    <div class="glass-card p-4 shadow-lg h-100">
+                        <h5 class="text-warning mb-4 fw-bold">Manually Raise Problem</h5>
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-4">
+                                <label class="form-label text-secondary small text-uppercase fw-bold mb-1">Customer
+                                    Name</label>
+                                <input type="text" v-model="newTicket.name"
+                                    class="form-control bg-dark text-white border-secondary"
+                                    placeholder="Enter full name">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-secondary small text-uppercase fw-bold mb-1">Mobile
+                                    Number</label>
+                                <input type="tel" v-model="newTicket.phone"
+                                    class="form-control bg-dark text-white border-secondary" placeholder="+91...">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label text-secondary small text-uppercase fw-bold mb-1">Problem
+                                    Description</label>
+                                <input type="text" v-model="newTicket.problem"
+                                    class="form-control bg-dark text-white border-secondary"
+                                    placeholder="Issue details">
+                            </div>
+                            <div class="col-md-12 mt-3">
+                                <button @click="addTicket" class="btn btn-warning fw-bold py-2 px-5">Add Ticket</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="glass-card p-4 shadow-lg h-100">
+                        <h5 class="text-white mb-4 fw-bold">Daily To-Do List</h5>
+                        <div class="d-flex gap-2 mb-3">
+                            <input type="text" v-model="newTodo" @keyup.enter="addTodo"
+                                class="form-control bg-dark text-white border-secondary" placeholder="Add new task...">
+                            <button @click="addTodo" class="btn btn-warning fw-bold">Add</button>
+                        </div>
+                        <ul class="list-group list-group-flush" style="max-height: 180px; overflow-y: auto;">
+                            <li v-if="todos.length === 0"
+                                class="list-group-item bg-transparent text-secondary border-0 px-0 small">No tasks added
+                                yet.</li>
+                            <li v-for="(todo, index) in todos" :key="index"
+                                class="list-group-item bg-transparent border-secondary d-flex justify-content-between align-items-center px-0">
+                                <div class="d-flex align-items-center gap-2">
+                                    <input class="form-check-input m-0 cursor-pointer" type="checkbox"
+                                        v-model="todo.done" @change="saveTodos">
+                                    <span
+                                        :class="{'text-decoration-line-through text-secondary': todo.done, 'text-light': !todo.done}"
+                                        style="font-size: 0.9rem;">
+                                        {{ todo.text }}
+                                    </span>
+                                </div>
+                                <button @click="removeTodo(index)"
+                                    class="btn btn-sm btn-outline-danger border-0 rounded-circle fw-bold">X</button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card p-4 shadow-lg">
+                <h4 class="mb-4 text-white fw-bold">All Active Maintenance Tickets</h4>
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle" style="--bs-table-bg: transparent;">
+                        <thead style="border-bottom: 2px solid #334155;">
+                            <tr>
+                                <th class="text-secondary text-uppercase small">ID</th>
+                                <th class="text-secondary text-uppercase small">Customer</th>
+                                <th class="text-secondary text-uppercase small">Phone</th>
+                                <th class="text-secondary text-uppercase small">Problem</th>
+                                <th class="text-secondary text-uppercase small">Status</th>
+                                <th class="no-print text-center text-secondary text-uppercase small">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-if="complaints.length === 0">
+                                <td colspan="6" class="text-center text-secondary py-4">No active tickets found.</td>
+                            </tr>
+                            <tr v-for="(c, index) in complaints" :key="c.id">
+                                <td class="text-secondary small fw-bold">{{ c.id }}</td>
+                                <td class="text-white fw-semibold">{{ c.customerName }}</td>
+                                <td class="font-monospace text-secondary">{{ c.phone }}</td>
+                                <td class="text-light">{{ c.problem }}</td>
+                                <td><span class="badge" :class="getBadgeClass(c.status)">{{ c.status }}</span></td>
+                                <td class="no-print text-center">
+                                    <button @click="deleteTicket(index)"
+                                        class="btn btn-sm btn-outline-danger fw-bold rounded-pill px-3">Remove</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const userName = ref('');
+                const complaints = ref([]);
+                const todos = ref([]);
+                const newTodo = ref('');
+
+                const newTicket = ref({
+                    name: '',
+                    phone: '',
+                    problem: ''
+                });
+
+                onMounted(() => {
+                    const activeUser = JSON.parse(localStorage.getItem('active_user'));
+
+                    if (!activeUser || activeUser.role !== 'admin') {
+                        window.location.href = 'login.html';
+                    } else {
+                        userName.value = activeUser.name;
+                    }
+
+                    complaints.value = JSON.parse(localStorage.getItem('solar_complaints')) || [];
+                    todos.value = JSON.parse(localStorage.getItem('admin_todos')) || [];
+                });
+
+                const logout = () => {
+                    localStorage.removeItem('active_user');
+                    window.location.href = 'login.html';
+                };
+
+                const printReport = () => {
+                    window.print();
+                };
+
+                const getBadgeClass = (status) => {
+                    if (status === 'Completed') return 'bg-success';
+                    if (status === 'In Progress') return 'bg-info text-dark';
+                    return 'bg-warning text-dark';
+                };
+
+                const addTicket = () => {
+                    if (!newTicket.value.name || !newTicket.value.problem) {
+                        alert("Please fill out the Customer Name and Problem Description.");
+                        return;
+                    }
+
+                    const ticket = {
+                        id: 'AD-' + Math.floor(1000 + Math.random() * 9000),
+                        customerName: newTicket.value.name,
+                        phone: newTicket.value.phone || 'N/A',
+                        problem: newTicket.value.problem,
+                        status: 'Pending'
+                    };
+
+                    complaints.value.push(ticket);
+                    localStorage.setItem('solar_complaints', JSON.stringify(complaints.value));
+                    newTicket.value = { name: '', phone: '', problem: '' };
+                };
+
+                const deleteTicket = (index) => {
+                    if (confirm("Are you sure you want to remove this ticket?")) {
+                        complaints.value.splice(index, 1);
+                        localStorage.setItem('solar_complaints', JSON.stringify(complaints.value));
+                    }
+                };
+
+                const saveTodos = () => {
+                    localStorage.setItem('admin_todos', JSON.stringify(todos.value));
+                };
+
+                const addTodo = () => {
+                    if (newTodo.value.trim() !== '') {
+                        todos.value.push({ text: newTodo.value, done: false });
+                        newTodo.value = '';
+                        saveTodos();
+                    }
+                };
+
+                const removeTodo = (index) => {
+                    todos.value.splice(index, 1);
+                    saveTodos();
+                };
+
+                return {
+                    userName, complaints, newTicket, todos, newTodo,
+                    logout, printReport, getBadgeClass, addTicket, deleteTicket,
+                    addTodo, removeTodo, saveTodos
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>
