@@ -8,23 +8,22 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve your frontend HTML files from the 'public' folder
+
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 1. Create MySQL Connection Pool (Strictly using .env variables)
+
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD, // Securely loads password from .env
+    password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     port: process.env.DB_PORT || 3306
 });
 
-// 2. AUTHENTICATION & LOGIN ROUTE
 app.post('/api/login', async (req, res) => {
     const { email, password, loginType } = req.body;
 
-    // A. Staff Login Logic
+
     if (loginType === 'staff') {
         if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASS) {
             return res.json({ success: true, user: { name: 'System Admin', email, role: 'admin' } });
@@ -35,7 +34,7 @@ app.post('/api/login', async (req, res) => {
         return res.status(401).json({ success: false, message: 'Invalid Staff Credentials.' });
     }
 
-    // B. Customer Login Logic (Query MySQL Database)
+
     if (loginType === 'customer') {
         try {
             const [rows] = await pool.query('SELECT * FROM users WHERE email = ? AND password = ?', [email, password]);
@@ -52,7 +51,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// 3. CUSTOMER REGISTRATION ROUTE
+
 app.post('/api/register', async (req, res) => {
     const { name, email, password } = req.body;
     try {
@@ -67,8 +66,7 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// 4. TICKETS (COMPLAINTS) ROUTES
-// Get all tickets
+
 app.get('/api/tickets', async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT * FROM complaints ORDER BY created_at DESC');
@@ -79,7 +77,7 @@ app.get('/api/tickets', async (req, res) => {
     }
 });
 
-// Create new ticket
+
 app.post('/api/tickets', async (req, res) => {
     const { id, customerName, phone, email, problem, status } = req.body;
     try {
@@ -94,7 +92,7 @@ app.post('/api/tickets', async (req, res) => {
     }
 });
 
-// Update ticket status
+
 app.patch('/api/tickets/:id', async (req, res) => {
     const { status } = req.body;
     try {
@@ -106,7 +104,7 @@ app.patch('/api/tickets/:id', async (req, res) => {
     }
 });
 
-// Delete ticket
+
 app.delete('/api/tickets/:id', async (req, res) => {
     try {
         await pool.query('DELETE FROM complaints WHERE id = ?', [req.params.id]);
